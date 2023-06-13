@@ -1,0 +1,115 @@
+const express = require('express');
+const itemRoutes = require('./routes/items');
+
+const app = express();
+
+// Set up other middleware and configurations
+
+app.use('/api', itemRoutes);
+
+// Start the server
+
+const port = 3000;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+const mongoose = require('mongoose');
+
+const itemSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  price: {
+    type: Number,
+    required: true
+  },
+  // Add more fields as needed
+});
+
+module.exports = mongoose.model('Item', itemSchema);
+const express = require('express');
+const router = express.Router();
+const Item = require('../models/item');
+
+// GET all items
+router.get('/items', (req, res) => {
+  Item.find()
+    .then((items) => {
+      res.json(items);
+    })
+    .catch((error) => {
+      res.status(500).json({ error: error.message });
+    });
+});
+
+// POST a new item
+router.post('/items', (req, res) => {
+  const newItem = new Item(req.body);
+  newItem.save()
+    .then(() => {
+      res.status(201).json(newItem);
+    })
+    .catch((error) => {
+      res.status(400).json({ error: error.message });
+    });
+});
+
+// Add more routes for PUT, DELETE, etc.
+
+module.exports = router;
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const app = require('../app');
+const Item = require('../models/item');
+
+// Configure Chai to use HTTP assertions
+chai.use(chaiHttp);
+const expect = chai.expect;
+
+// Start writing test cases
+describe('Items API', () => {
+  beforeEach((done) => {
+    // Clear the items collection before each test
+    Item.deleteMany({}, () => {
+      done();
+    });
+  });
+
+  describe('GET /api/items', () => {
+    it('should return all items', (done) => {
+      chai.request(app)
+        .get('/api/items')
+        .end((err, res) => {
+          expect(res).to.have.status(200);
+          expect(res.body).to.be.an('array');
+          expect(res.body).to.have.lengthOf(0); // Assuming no items initially
+          done();
+        });
+    });
+  });
+
+  describe('POST /api/items', () => {
+    it('should create a new item', (done) => {
+      const newItem = {
+        name: 'Item 1',
+        price: 10.99
+      };
+
+      chai.request(app)
+        .post('/api/items')
+        .send(newItem)
+        .end((err, res) => {
+          expect(res).to.have.status(201);
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.have.property('_id');
+          expect(res.body.name).to.equal(newItem.name);
+          expect(res.body.price).to.equal(newItem.price);
+          done();
+        });
+    });
+  });
+
+  // Add more test cases for other API endpoints
+
+});
